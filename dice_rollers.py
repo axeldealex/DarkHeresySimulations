@@ -3,7 +3,7 @@
 # Doing this to prove to my GM that the sniper rifle upgrade he's offering me is close to redundant
 # Planning to implement more weapon qualities, those are seen in the below TODO
 # Might upload this to Github as a weird portfolio piece at some point, I do intend to fully document this thing
-# Will see if actually ends up happening
+# Will see if that actually ends up happening
 ####################################
 
 # TODO
@@ -175,16 +175,30 @@ def dice_roller(n_dice, target, damage_bonus, penetration, accurate=False, prove
 
 # TODO make this function work by loading in an enemy from a file somewhere before
 def get_damage_dealt(hit_roll, enemy, graviton=False):
+    """"
+    Calculates the exact damage dealt based on enemy armour values, original hit roll and some armour features.
+    """
 
     return 0
 
 
 # TODO implement enemy loading, create .txt files with all relevant stats.
 # could maybe be jsons as well? fun exercise in making jsons
-def load_enemy(enemy_fp):
+def load_enemy(enemy_name):
+    """"
+    Loads enemy stats from a .txt file, in a pre-made location within the directory
+    """
+    enemy_fp = "enemies/" + enemy_name
+    enemy_stats = {}
+    # TODO read out the enemy stats
+    with open(enemy_fp, "r") as f:
+        for line in f:
+            if line.startswith('#'):
+                pass
+            else:
+                split_line = line.split("\t")
+                enemy_stats[split_line[0]] = split_line[1]
 
-    # TODO placeholder
-    enemy_stats = 0
     return enemy_stats
 
 
@@ -207,13 +221,17 @@ def main(args=False):
             damage_dealt = damage_dealt + get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats,
                                                            graviton=args.graviton)
 
-    hit_rate = hit_rate / args.n_rolls
+    hit_rate = hit_rate / args.n_rolls * 100
     average_damage = damage_dealt / args.n_rolls
 
     # TODO add verbose printing options
     if args.verbose:
+        print(f"hit rate was {hit_rate}%")
         pass
 
 
 if __name__ == '__main__':
     main()
+
+# welcome to the bottom of the file, thanks for checking out the code. Hope its comprehensive enough to understand.
+# if you've got any suggestions or want to talk Python DM me on Discord - AxeldeAlex#9520

@@ -190,7 +190,7 @@ def load_enemy(enemy_name):
     """
     enemy_fp = "enemies/" + enemy_name
     enemy_stats = {}
-    # TODO read out the enemy stats
+
     with open(enemy_fp, "r") as f:
         for line in f:
             if line.startswith('#'):

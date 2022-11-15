@@ -28,35 +28,31 @@ def parse_args():
                                      'defaults:\n'
                                      '  no extra properties on the weapon\n'
                                      '  target = 50\n')
-    parser.add_argument('n_rolls', dest='n_rolls', default=1000,
+    parser.add_argument('-n', dest='n_rolls', default=1000, type=int,
                         help='number of rolls to simulate')
-    parser.add_argument('-t', '--target', dest='target', default=50,
+    parser.add_argument('-t', '--target', dest='target', default=50, type=int,
                         help='target to hit. Must be a positive integer.')
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='print some of the progress to the terminal', default=False)
-    parser.add_argument('-p', '--proven', dest='proven', default=False,
+    parser.add_argument('-p', '--proven', dest='proven', default=False, type=int,
                         help='proven, minimal value of the damage die. Must be a postive integer below 10 and above 1.')
     parser.add_argument('-a', '--accurate', dest='accurate', action='store_true', default=False,
                         help='accurate, adds extra damage die on high DoS. True or False.')
-    parser.add_argument('-s', '--sides', dest='sides', default=10,
+    parser.add_argument('-s', '--sides', dest='sides', default=10, type=int,
                         help='number of sides on a damage die. Needs to be a positive integer above 1.')
 
     args = parser.parse_args()
 
-    if args.proven < 2 or args.proven > 10:
+    if (args.proven < 2 or args.proven > 10) and args.proven:
         parser.error("invalid number for proven")
 
-    # TODO
-    # not sure if this will work as I want it to, type of args.sides isn't clear to me
-    if args.sides < 2 or type(args.sides) != int:
+    if args.sides < 2:
         parser.error("invalid number for sides")
-    # TODO
-    # same here
-    if type(args.n_rolls) != int or args.n_rolls < 1:
+
+    if args.n_rolls < 1:
         parser.error("n_rolls must be a positive integer")
-    # TODO
-    # number 3 in the series of checking type in an argparser
-    if type(args.target) != int or args.target < 1:
+
+    if args.target < 1:
         parser.error("target must be a positive integer")
 
     return args
@@ -161,9 +157,11 @@ def main(args=False):
     """
     Runs the script given commands from argparser
     """
-    if not args: args = parse_args()
+    if not args:
+        args = parse_args()
 
     rolls = dice_roller(args.n_rolls, args.target, args.sides)
+    print(len(rolls))
 
 
 if __name__ == '__main__':

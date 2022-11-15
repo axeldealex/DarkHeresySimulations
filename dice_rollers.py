@@ -29,7 +29,9 @@ def parse_args():
                                      '  no extra properties on the weapon\n'
                                      '  target = 50\n')
     parser.add_argument('n_rolls', dest='n_rolls', default=1000,
-                        help='Number of rolls to simulate')
+                        help='number of rolls to simulate')
+    parser.add_argument('-t', '--target', dest='target', default=50,
+                        help='target to hit. Must be a positive integer.')
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='print some of the progress to the terminal', default=False)
     parser.add_argument('-p', '--proven', dest='proven', default=False,
@@ -45,23 +47,37 @@ def parse_args():
         parser.error("invalid number for proven")
 
     # TODO
-    # not sure if this will work as I want it to
+    # not sure if this will work as I want it to, type of args.sides isn't clear to me
     if args.sides < 2 or type(args.sides) != int:
         parser.error("invalid number for sides")
     # TODO
     # same here
     if type(args.n_rolls) != int or args.n_rolls < 1:
-        parser.error("n_rolls must be a positive number")
+        parser.error("n_rolls must be a positive integer")
+    # TODO
+    # number 3 in the series of checking type in an argparser
+    if type(args.target) != int or args.target < 1:
+        parser.error("target must be a positive integer")
+
+    return args
 
 
-def die_roll(proven=False, sides=10):
+def damage_roll(DoS, accurate, proven=False, sides=10):
     """"
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
     """
+    assert DoS > 0
     roll = random.randint(1, sides)
-    if roll < proven:
-        roll = proven
+    if proven:
+        if roll < proven:
+            roll = proven
+
+    if accurate:
+        if (DoS - 1) // 2 > 1:
+            roll = roll + random.randint(1, sides)
+        if (DoS - 1) // 2 > 2:
+            roll = roll + random.randint(1, sides)
     return roll
 
 
@@ -87,7 +103,7 @@ def determine_location(hit_roll):
         return "leg_right"
 
 
-def hit_roller(target):
+def hit_roller(target, proven, sides, accurate):
     """"
     Determines if the attack hits
     returns a dict with:
@@ -102,15 +118,19 @@ def hit_roller(target):
     if hit_roll <= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
+        damage = damage_roll(degrees, accurate, proven, sides)
     else:
         degrees = target // 10 - hit_roll // 10 - 1
         result = False
+        damage = "miss"
+
 
     # returns the result of the hit in a dict
     return {"result": result,
             "degrees": degrees,
             "location": determine_location(hit_roll),
-            "hit_roll": hit_roll}
+            "hit_roll": hit_roll,
+            "damage": damage}
 
 
 def dice_roller(n_dice, target, accurate=False, proven=False, sides=10):
@@ -119,7 +139,6 @@ def dice_roller(n_dice, target, accurate=False, proven=False, sides=10):
     target is the number to beat (lower = success) on a d100
     accurate is
     proven is the minimum value a die takes, is passed as an input to deeper functions
-
     returns a list of damage die
     """
     # checks that proven is valid
@@ -134,9 +153,18 @@ def dice_roller(n_dice, target, accurate=False, proven=False, sides=10):
     # rolls the n_dice times
     for i in range(n_dice):
         # and appends to list
-        rolls.append(die_roll(proven, sides))
+        rolls.append(hit_roller(target, proven, sides, accurate))
     return rolls
 
 
-def main():
-    pass
+def main(args=False):
+    """
+    Runs the script given commands from argparser
+    """
+    if not args: args = parse_args()
+
+    rolls = dice_roller(args.n_rolls, args.target, args.sides)
+
+
+if __name__ == '__main__':
+    main()

@@ -7,10 +7,11 @@
 ####################################
 
 # TODO
-# implement damage dice
-# properly implement to hit
-# implement accurate
 # implement razor sharp
+# implement automatic histogram plotting
+# implement hit rate
+# implement expected damage value
+# implement targets with AP and soak
 
 import argparse
 import random
@@ -35,7 +36,8 @@ def parse_args():
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='print some of the progress to the terminal', default=False)
     parser.add_argument('-p', '--proven', dest='proven', default=False, type=int,
-                        help='proven, minimal value of the damage die. Must be a postive integer below 10 and above 1.')
+                        help='proven, minimal value of the damage die. '
+                             'Must be a positive integer below 10 and above 1.')
     parser.add_argument('-a', '--accurate', dest='accurate', action='store_true', default=False,
                         help='accurate, adds extra damage die on high DoS. True or False.')
     parser.add_argument('-s', '--sides', dest='sides', default=10, type=int,
@@ -43,7 +45,7 @@ def parse_args():
 
     args = parser.parse_args()
 
-    if (args.proven < 2 or args.proven > 10) and args.proven:
+    if (args.proven < 2 or args.proven >= args.sides) and args.proven:
         parser.error("invalid number for proven")
 
     if args.sides < 2:
@@ -63,7 +65,6 @@ def damage_roll(DoS, accurate, proven=False, sides=10):
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
     """
-    assert DoS > 0
     roll = random.randint(1, sides)
     if proven:
         if roll < proven:
@@ -104,22 +105,24 @@ def hit_roller(target, proven, sides, accurate):
     Determines if the attack hits
     returns a dict with:
         result (True/False)
-        degrees (degrees of succes if positive,
+        degrees (degrees of success if positive,
                 negative if failure)
         location (string with location hit)
         hit_roll (int of original roll)
     """
+    # rolls the set
     hit_roll = random.randint(1, 100)
 
+    # set values for a success
     if hit_roll <= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
         damage = damage_roll(degrees, accurate, proven, sides)
+    # or a fail
     else:
         degrees = target // 10 - hit_roll // 10 - 1
         result = False
         damage = "miss"
-
 
     # returns the result of the hit in a dict
     return {"result": result,
@@ -137,12 +140,6 @@ def dice_roller(n_dice, target, accurate=False, proven=False, sides=10):
     proven is the minimum value a die takes, is passed as an input to deeper functions
     returns a list of damage die
     """
-    # checks that proven is valid
-    assert sides >= proven
-    if sides == proven:
-        if "X" == input("Your proven value is equal to the amount of sides on a die - input x to quit "
-                        "and re-input").capitalize():
-            return -1
 
     # init empty list for storing rolls
     rolls = []

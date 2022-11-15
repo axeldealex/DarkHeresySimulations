@@ -8,10 +8,12 @@
 
 # TODO
 # implement razor sharp
+# implement graviton
 # implement automatic histogram plotting
 # implement hit rate
-# implement expected damage value
+# implement expected damage value per turn
 # implement targets with AP and soak
+# implement single shot/multi round burst
 
 import argparse
 import random
@@ -28,34 +30,53 @@ def parse_args():
                                      '\n'
                                      'defaults:\n'
                                      '  no extra properties on the weapon\n'
-                                     '  target = 50\n')
+                                     '  target = 50\n'
+                                     '  sides = 10\n')
+
+    # parser argument for number of rolls to simulate
     parser.add_argument('-n', dest='n_rolls', default=1000, type=int,
                         help='number of rolls to simulate')
+    # parser argument for target to hit
     parser.add_argument('-t', '--target', dest='target', default=50, type=int,
                         help='target to hit. Must be a positive integer.')
-    parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
-                        help='print some of the progress to the terminal', default=False)
-    parser.add_argument('-p', '--proven', dest='proven', default=False, type=int,
+    # parser argument for verbose printing
+    parser.add_argument('-v', '--verbose', dest='verbose', default=False, action='store_true',
+                        help='print some of the progress to the terminal')
+
+    # flags for weapon traits
+    parser.add_argument('-pr', '--proven', dest='proven', default=False, type=int,
                         help='proven, minimal value of the damage die. '
                              'Must be a positive integer below 10 and above 1.')
     parser.add_argument('-a', '--accurate', dest='accurate', action='store_true', default=False,
                         help='accurate, adds extra damage die on high DoS. True or False.')
+    parser.add_argument('-b', '--bonus', dest='bonus', default=0, type=int,
+                        help='flat bonus to damage')
+    parser.add_argument('-g', '-graviton', dest='graviton', default=False, action='store_true',
+                        help='graviton, adds extra damage based on the armour of the target')
+    parser.add_argument('-p', '--penetration', dest='penetration', default=0, type=int,
+                        help='penetration of the weapon, only works against armour on the enemy')
+
+    # selection of which enemy is being shot at
+    parser.add_argument('-e', '--enemy', dest='enemy', default='ganger',
+                        choices=['tank', 'astartes', 'ganger', 'hiver'])
+
+    # special flag for changing number of sides - never required for DH2e calculations (except for knives)
     parser.add_argument('-s', '--sides', dest='sides', default=10, type=int,
                         help='number of sides on a damage die. Needs to be a positive integer above 1.')
 
     args = parser.parse_args()
 
+    # catching errors prematurely
     if (args.proven < 2 or args.proven >= args.sides) and args.proven:
         parser.error("invalid number for proven")
-
     if args.sides < 2:
         parser.error("invalid number for sides")
-
     if args.n_rolls < 1:
         parser.error("n_rolls must be a positive integer")
-
     if args.target < 1:
         parser.error("target must be a positive integer")
+    if args.penetration < 0:
+        parser.error("penetration must be a positive number")
 
     return args
 
@@ -100,7 +121,7 @@ def determine_location(hit_roll):
         return "leg_right"
 
 
-def hit_roller(target, proven, sides, accurate):
+def hit_roller(target, proven, sides, accurate, bonus):
     """"
     Determines if the attack hits
     returns a dict with:
@@ -114,10 +135,10 @@ def hit_roller(target, proven, sides, accurate):
     hit_roll = random.randint(1, 100)
 
     # set values for a success
-    if hit_roll <= target:
+    if hit_roll >= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
-        damage = damage_roll(degrees, accurate, proven, sides)
+        damage = damage_roll(degrees, accurate, proven, sides) + bonus
     # or a fail
     else:
         degrees = target // 10 - hit_roll // 10 - 1
@@ -132,7 +153,7 @@ def hit_roller(target, proven, sides, accurate):
             "damage": damage}
 
 
-def dice_roller(n_dice, target, accurate=False, proven=False, sides=10):
+def dice_roller(n_dice, target, damage_bonus, penetration, accurate=False, proven=False, sides=10):
     """"
     Rolls a predefined number of dice with specified amount of sides
     target is the number to beat (lower = success) on a d100
@@ -146,8 +167,25 @@ def dice_roller(n_dice, target, accurate=False, proven=False, sides=10):
     # rolls the n_dice times
     for i in range(n_dice):
         # and appends to list
-        rolls.append(hit_roller(target, proven, sides, accurate))
+        rolls.append(hit_roller(target=target, proven=proven, sides=sides, accurate=accurate,
+                                bonus=damage_bonus))
+        rolls[i]["penetration"] = penetration
     return rolls
+
+
+# TODO make this function work by loading in an enemy from a file somewhere before
+def get_damage_dealt(hit_roll, enemy, graviton=False):
+
+    return 0
+
+
+# TODO implement enemy loading, create .txt files with all relevant stats.
+# could maybe be jsons as well? fun exercise in making jsons
+def load_enemy(enemy_fp):
+
+    # TODO placeholder
+    enemy_stats = 0
+    return enemy_stats
 
 
 def main(args=False):
@@ -156,9 +194,25 @@ def main(args=False):
     """
     if not args:
         args = parse_args()
+    enemy_stats = load_enemy(args.enemy)
+    rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides,
+                        proven=args.proven, accurate=args.accurate, damage_bonus=args.bonus,
+                        penetration=args.penetration)
 
-    rolls = dice_roller(args.n_rolls, args.target, args.sides)
-    print(len(rolls))
+    hit_rate = 0
+    damage_dealt = 0
+    for i in range(args.n_rolls):
+        if bool(rolls[i]["result"]):
+            hit_rate = hit_rate + 1
+            damage_dealt = damage_dealt + get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats,
+                                                           graviton=args.graviton)
+
+    hit_rate = hit_rate / args.n_rolls
+    average_damage = damage_dealt / args.n_rolls
+
+    # TODO add verbose printing options
+    if args.verbose:
+        pass
 
 
 if __name__ == '__main__':

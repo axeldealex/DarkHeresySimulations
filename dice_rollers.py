@@ -58,7 +58,12 @@ def parse_args():
 
     # selection of which enemy is being shot at
     parser.add_argument('-e', '--enemy', dest='enemy', default='ganger',
-                        choices=['tank', 'astartes', 'ganger', 'hiver'])
+                        choices=['tank', 'astartes', 'ganger', 'hiver'],
+                        help='selection of which enemy is being shot at - only has limited options')
+    # selection of which direction a vehicle is being shot from - only comes into play when tank is chosen.
+    parser.add_argument('-f', '--facing', dest='facing', default=False,
+                        choices=[False, 'front', 'side', 'rear'],
+                        help='selection of which side of a vehicle is being shot at')
 
     # special flag for changing number of sides - never required for DH2e calculations (except for knives)
     parser.add_argument('-s', '--sides', dest='sides', default=10, type=int,
@@ -121,7 +126,7 @@ def determine_location(hit_roll):
         return "leg_right"
 
 
-def hit_roller(target, proven, sides, accurate, bonus):
+def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
     """"
     Determines if the attack hits
     returns a dict with:
@@ -145,15 +150,20 @@ def hit_roller(target, proven, sides, accurate, bonus):
         result = False
         damage = "miss"
 
+    if not vehicle_facing:
+        location = determine_location(hit_roll)
+    else:
+        location = vehicle_facing
+
     # returns the result of the hit in a dict
     return {"result": result,
             "degrees": degrees,
-            "location": determine_location(hit_roll),
+            "location": location,
             "hit_roll": hit_roll,
             "damage": damage}
 
 
-def dice_roller(n_dice, target, damage_bonus, penetration, accurate=False, proven=False, sides=10):
+def dice_roller(n_dice, target, damage_bonus, penetration, vehicle_facing, accurate=False, proven=False, sides=10):
     """"
     Rolls a predefined number of dice with specified amount of sides
     target is the number to beat (lower = success) on a d100
@@ -168,7 +178,7 @@ def dice_roller(n_dice, target, damage_bonus, penetration, accurate=False, prove
     for i in range(n_dice):
         # and appends to list
         rolls.append(hit_roller(target=target, proven=proven, sides=sides, accurate=accurate,
-                                bonus=damage_bonus))
+                                bonus=damage_bonus, vehicle_facing=vehicle_facing))
         rolls[i]["penetration"] = penetration
     return rolls
 
@@ -182,13 +192,11 @@ def get_damage_dealt(hit_roll, enemy, graviton=False):
     return 0
 
 
-# TODO implement enemy loading, create .txt files with all relevant stats.
-# could maybe be jsons as well? fun exercise in making jsons
 def load_enemy(enemy_name):
     """"
     Loads enemy stats from a .txt file, in a pre-made location within the directory
     """
-    enemy_fp = "enemies/" + enemy_name
+    enemy_fp = "enemies/" + enemy_name + ".txt"
     enemy_stats = {}
 
     with open(enemy_fp, "r") as f:
@@ -196,8 +204,9 @@ def load_enemy(enemy_name):
             if line.startswith('#'):
                 pass
             else:
-                split_line = line.split("\t")
-                enemy_stats[split_line[0]] = split_line[1]
+                split_line = line.strip("\n").split()
+                print(split_line)
+                enemy_stats[split_line[0]] = int(split_line[1])
 
     return enemy_stats
 
@@ -208,10 +217,12 @@ def main(args=False):
     """
     if not args:
         args = parse_args()
+
     enemy_stats = load_enemy(args.enemy)
+
     rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides,
                         proven=args.proven, accurate=args.accurate, damage_bonus=args.bonus,
-                        penetration=args.penetration)
+                        penetration=args.penetration, vehicle_facing=args.facing)
 
     hit_rate = 0
     damage_dealt = 0

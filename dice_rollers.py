@@ -17,7 +17,9 @@
 # implement single shot/multi round burst
 
 import argparse
-import random
+from loading_funcs import load_enemy, load_weapon
+from random import randint
+from os import listdir
 
 
 def parse_args():
@@ -37,9 +39,15 @@ def parse_args():
     # parser argument for number of rolls to simulate
     parser.add_argument('-n', dest='n_rolls', default=1000, type=int,
                         help='number of rolls to simulate')
+
     # parser argument for target to hit
     parser.add_argument('-t', '--target', dest='target', default=50, type=int,
                         help='target to hit. Must be a positive integer.')
+
+    # parser argument for important a weapon preset
+    parser.add_argument('-w', '--weapon', dest='weapon', choices=listdir('weapon_presets'), default=False,
+                        help='weapon preset to perform calculations with. Takes precedence over manual values.')
+
     # parser argument for verbose printing
     parser.add_argument('-v', '--verbose', dest='verbose', default=False, action='store_true',
                         help='print some of the progress to the terminal')
@@ -58,8 +66,7 @@ def parse_args():
                         help='penetration of the weapon, only works against armour on the enemy')
 
     # selection of which enemy is being shot at
-    parser.add_argument('-e', '--enemy', dest='enemy', default='hiver',
-                        choices=['tank', 'astartes', 'ganger', 'hiver'],
+    parser.add_argument('-e', '--enemy', dest='enemy', default='hiver', choices=listdir('enemy_presets'),
                         help='selection of which enemy is being shot at - only has limited options')
     # selection of which direction a vehicle is being shot from - only comes into play when tank is chosen.
     parser.add_argument('-f', '--facing', dest='facing', default=False,
@@ -92,16 +99,16 @@ def damage_roll(DoS, accurate, proven, sides):
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
     """
-    roll = random.randint(1, sides)
+    roll = randint(1, sides)
     if proven:
         if roll < proven:
             roll = proven
 
     if accurate:
         if (DoS - 1) // 2 > 1:
-            roll = roll + random.randint(1, sides)
+            roll = roll + randint(1, sides)
         if (DoS - 1) // 2 > 2:
-            roll = roll + random.randint(1, sides)
+            roll = roll + randint(1, sides)
     return roll
 
 
@@ -139,7 +146,7 @@ def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
         hit_roll (int of original roll)
     """
     # rolls the set
-    hit_roll = random.randint(1, 100)
+    hit_roll = randint(1, 100)
 
     # set values for a success
     if hit_roll <= target:
@@ -205,24 +212,6 @@ def get_damage_dealt(hit_roll, enemy, graviton=False):
     # inputs proper damage value into hit dict
     hit_roll["damage"] = damage
     return damage, hit_roll
-
-
-def load_enemy(enemy_name):
-    """"
-    Loads enemy stats from a .txt file, in a pre-made location within the directory
-    """
-    enemy_fp = "enemies/" + enemy_name + ".txt"
-    enemy_stats = {}
-
-    with open(enemy_fp, "r") as f:
-        for line in f:
-            if line.startswith('#'):
-                pass
-            else:
-                split_line = line.strip("\n").split()
-                enemy_stats[split_line[0]] = int(split_line[1])
-
-    return enemy_stats
 
 
 def main(args=False):

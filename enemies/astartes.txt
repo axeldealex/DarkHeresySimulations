@@ -1,0 +1,8 @@
+# astarted, pride of the emperor of mankind
+toughness 50
+head 8
+arm_right 8
+arm_left 8
+body 8
+leg_left 8
+leg_right 8

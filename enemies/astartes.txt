@@ -1,5 +1,5 @@
-# astarted, pride of the emperor of mankind
-toughness 50
+# astartes, pride of the emperor of mankind
+toughness 80
 head 8
 arm_right 8
 arm_left 8

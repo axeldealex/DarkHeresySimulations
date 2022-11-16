@@ -10,9 +10,10 @@
 # ensure vehicle facing is required when certain stat blocks are passed
 
 # TODO
-# implement razor sharp
-# implement automatic histogram plotting
-# implement more targets with AP and soak
+# standard weapon loading
+# razor sharp
+# automatic histogram plotting
+# more targets
 # implement single shot/multi round burst
 
 import argparse

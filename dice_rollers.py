@@ -6,13 +6,13 @@
 # Will see if that actually ends up happening
 ####################################
 
+# TODO IMPORTANT, KNOWN BUGS
+# ensure vehicle facing is required when certain stat blocks are passed
+
 # TODO
 # implement razor sharp
-# implement graviton
 # implement automatic histogram plotting
-# implement hit rate
-# implement expected damage value per turn
-# implement targets with AP and soak
+# implement more targets with AP and soak
 # implement single shot/multi round burst
 
 import argparse
@@ -26,12 +26,12 @@ def parse_args():
     parser = argparse.ArgumentParser(prog='python3 dice_rollers.py',
                                      formatter_class=argparse.RawTextHelpFormatter,
                                      description='  Rolls dice given certain attributes passed as flags.\n'
-                                     '  WIP as of now\n'
-                                     '\n'
-                                     'defaults:\n'
-                                     '  no extra properties on the weapon\n'
-                                     '  target = 50\n'
-                                     '  sides = 10\n')
+                                                 '  WIP as of now\n'
+                                                 '\n'
+                                                 'defaults:\n'
+                                                 '  no extra properties on the weapon\n'
+                                                 '  target = 50\n'
+                                                 '  sides = 10\n')
 
     # parser argument for number of rolls to simulate
     parser.add_argument('-n', dest='n_rolls', default=1000, type=int,
@@ -57,7 +57,7 @@ def parse_args():
                         help='penetration of the weapon, only works against armour on the enemy')
 
     # selection of which enemy is being shot at
-    parser.add_argument('-e', '--enemy', dest='enemy', default='ganger',
+    parser.add_argument('-e', '--enemy', dest='enemy', default='hiver',
                         choices=['tank', 'astartes', 'ganger', 'hiver'],
                         help='selection of which enemy is being shot at - only has limited options')
     # selection of which direction a vehicle is being shot from - only comes into play when tank is chosen.
@@ -86,7 +86,7 @@ def parse_args():
     return args
 
 
-def damage_roll(DoS, accurate, proven=False, sides=10):
+def damage_roll(DoS, accurate, proven, sides):
     """"
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
@@ -107,6 +107,7 @@ def damage_roll(DoS, accurate, proven=False, sides=10):
 def determine_location(hit_roll):
     """"
     Given a hit roll, determines the location of the target hit following Dark Heresy 2 rules
+    Only for persons, vehicles are handled from the parser
     """
     first_num = hit_roll % 10
     second_num = hit_roll // 10
@@ -140,7 +141,7 @@ def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
     hit_roll = random.randint(1, 100)
 
     # set values for a success
-    if hit_roll >= target:
+    if hit_roll <= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
         damage = damage_roll(degrees, accurate, proven, sides) + bonus
@@ -163,7 +164,7 @@ def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
             "damage": damage}
 
 
-def dice_roller(n_dice, target, damage_bonus, penetration, vehicle_facing, accurate=False, proven=False, sides=10):
+def dice_roller(n_dice, target, damage_bonus, penetration, vehicle_facing, accurate, proven, sides):
     """"
     Rolls a predefined number of dice with specified amount of sides
     target is the number to beat (lower = success) on a d100
@@ -188,8 +189,21 @@ def get_damage_dealt(hit_roll, enemy, graviton=False):
     """"
     Calculates the exact damage dealt based on enemy armour values, original hit roll and some armour features.
     """
+    # gets values from enemy and hit dict
+    damage = hit_roll["damage"]
+    armour = enemy[hit_roll["location"]]
 
-    return 0
+    # checks graviton flag
+    if graviton:
+        damage = damage + armour
+
+    # calculates damage
+    soak = (enemy['toughness'] // 10) + max(armour - hit_roll["penetration"], 0)
+    damage = max(damage - soak, 0)
+
+    # inputs proper damage value into hit dict
+    hit_roll["damage"] = damage
+    return damage, hit_roll
 
 
 def load_enemy(enemy_name):
@@ -205,7 +219,6 @@ def load_enemy(enemy_name):
                 pass
             else:
                 split_line = line.strip("\n").split()
-                print(split_line)
                 enemy_stats[split_line[0]] = int(split_line[1])
 
     return enemy_stats
@@ -218,27 +231,34 @@ def main(args=False):
     if not args:
         args = parse_args()
 
+    # loads enemy stats
     enemy_stats = load_enemy(args.enemy)
 
+    # simulates rolls
     rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides,
                         proven=args.proven, accurate=args.accurate, damage_bonus=args.bonus,
                         penetration=args.penetration, vehicle_facing=args.facing)
 
-    hit_rate = 0
-    damage_dealt = 0
+    hits = 0
+    damage_sum = 0
+    # loops over rolls to extract statistics
     for i in range(args.n_rolls):
         if bool(rolls[i]["result"]):
-            hit_rate = hit_rate + 1
-            damage_dealt = damage_dealt + get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats,
-                                                           graviton=args.graviton)
+            hits = hits + 1
+            # calculates damage dealt
+            damage_dealt, rolls[i] = get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats, graviton=args.graviton)
+            damage_sum = damage_sum + damage_dealt
 
-    hit_rate = hit_rate / args.n_rolls * 100
-    average_damage = damage_dealt / args.n_rolls
+    # determines hit rate and damage per shot dealt
+    hit_rate = hits / args.n_rolls * 100
+    average_damage_shot = damage_sum / args.n_rolls
+    average_damage_hit = damage_sum / hits
 
-    # TODO add verbose printing options
+    # TODO add better verbose printing options
     if args.verbose:
         print(f"hit rate was {hit_rate}%")
-        pass
+        print(f"average damage per shot was {average_damage_shot}")
+        print(f"average damage per hit was {average_damage_hit}")
 
 
 if __name__ == '__main__':

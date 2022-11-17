@@ -1,4 +1,5 @@
 # ganger wearing some scrapped together armour
+vehicle 0
 toughness 30
 head 3
 arm_right 3

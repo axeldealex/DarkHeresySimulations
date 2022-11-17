@@ -51,7 +51,7 @@ def parse_args():
                         help='weapon preset to perform calculations with. Takes precedence over manual values.')
 
     # parser argument for verbose printing
-    parser.add_argument('-v', '--verbose', dest='verbose', default=False, action='store_true',
+    parser.add_argument('-v', '--verbose', dest='verbose', default=True, action='store_true',
                         help='print some of the progress to the terminal')
 
     # flags for weapon traits
@@ -68,7 +68,7 @@ def parse_args():
                         help='penetration of the weapon, only works against armour on the enemy')
 
     # selection of which enemy is being shot at
-    parser.add_argument('-e', '--enemy', dest='enemy', default='hiver', choices=listdir('enemy_presets'),
+    parser.add_argument('-e', '--enemy', dest='enemy', default='hiver.txt', choices=listdir('enemy_presets'),
                         help='selection of which enemy is being shot at - only has limited options')
     # selection of which direction a vehicle is being shot from - only comes into play when tank is chosen.
     parser.add_argument('-f', '--facing', dest='facing', default=False,
@@ -194,7 +194,6 @@ def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=Fa
     return rolls
 
 
-# TODO make this function work by loading in an enemy from a file somewhere before
 def get_damage_dealt(hit_roll, enemy, graviton=False):
     """"
     Calculates the exact damage dealt based on enemy armour values, original hit roll and some armour features.
@@ -216,6 +215,57 @@ def get_damage_dealt(hit_roll, enemy, graviton=False):
     return damage, hit_roll
 
 
+def calculate_stats(rolls, graviton, enemy_stats):
+    """"
+    Calculates a selection of stats such as
+        hit rate (0-1)
+        average damage per shot (float)
+        average damage per hit (float)
+
+    and returns a dict with those values
+    """
+    hits = 0
+    damage_sum = 0
+    n_rolls = len(rolls)
+    stats = {}
+
+    # loops over rolls to extract statistics
+    for i in range(len(rolls)):
+        if bool(rolls[i]["result"]):
+            hits = hits + 1
+            # calculates damage dealt
+            damage_dealt, rolls[i] = get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats, graviton=graviton)
+            damage_sum = damage_sum + damage_dealt
+
+    # determines hit rate and damage per shot dealt
+    stats["hit_rate"] = hits / n_rolls * 100
+    stats["average_damage_shot"] = damage_sum / n_rolls
+    stats["average_damage_hit"] = damage_sum / hits
+
+    return stats
+
+
+def verbose_printing(stats):
+    """"
+    verbose printing statements
+    """
+    print(f'hit rate was {stats.get("hit_rate")} %')
+    print(f'average damage per shot was {stats.get("average_damage_shot")}')
+    print(f"average damage per hit was {stats.get('average_damage_hit')}")
+
+
+def input_checks(enemy_stats, facing):
+    # checks if a facing is provided when it shouldn't be
+    if enemy_stats['vehicle']:
+        if not facing:
+            raise ValueError("enemy is a vehicle but no facing is given\n"
+                             "re-input with flag -f to give a facing.")
+    else:
+        if facing:
+            raise ValueError("enemy is not a vehicle but a facing is given\n"
+                             "re-input without -f to get results.")
+
+
 def main(args=False):
     """
     Runs the script given commands from argparser
@@ -226,13 +276,16 @@ def main(args=False):
     # loads enemy stats
     enemy_stats = load_enemy(args.enemy)
 
+    # checks for proper inputs
+    input_checks(enemy_stats, args.facing)
+
     # loads weapon and rolls the dice
     if args.weapon:
         weapon = load_weapon(args.weapon)
         graviton = weapon["graviton"]
         rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides, proven=weapon["proven"],
                             accurate=weapon["proven"], damage_bonus=weapon["damage_bonus"],
-                            penetration=weapon["penetration"], )
+                            penetration=weapon["penetration"], vehicle_facing=args.facing)
     # or uses some base stats
     else:
         graviton = args.graviton
@@ -240,27 +293,11 @@ def main(args=False):
                             proven=args.proven, accurate=args.accurate, damage_bonus=args.bonus,
                             penetration=args.penetration, vehicle_facing=args.facing)
 
-    # TODO move all this to a verbose function or plotting
-    hits = 0
-    damage_sum = 0
-    # loops over rolls to extract statistics
-    for i in range(args.n_rolls):
-        if bool(rolls[i]["result"]):
-            hits = hits + 1
-            # calculates damage dealt
-            damage_dealt, rolls[i] = get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats, graviton=graviton)
-            damage_sum = damage_sum + damage_dealt
+    # calculate stats
+    stats = calculate_stats(rolls=rolls, graviton=graviton, enemy_stats=enemy_stats)
 
-    # determines hit rate and damage per shot dealt
-    hit_rate = hits / args.n_rolls * 100
-    average_damage_shot = damage_sum / args.n_rolls
-    average_damage_hit = damage_sum / hits
-
-    # TODO add better verbose printing options
     if args.verbose:
-        print(f"hit rate was {hit_rate}%")
-        print(f"average damage per shot was {average_damage_shot}")
-        print(f"average damage per hit was {average_damage_hit}")
+        verbose_printing(stats)
 
 
 if __name__ == '__main__':

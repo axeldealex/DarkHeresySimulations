@@ -1,0 +1,10 @@
+# A standard sniper rifle - no modification
+family solid_projectile
+class basic
+range 200
+RoF 1/-/-
+damage_bonus 4
+penetration 3
+clip 20
+accurate True
+reliable True

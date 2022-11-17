@@ -6,14 +6,16 @@
 # Will see if that actually ends up happening
 ####################################
 
-# TODO IMPORTANT, KNOWN BUGS
+# TODO IMPORTANT/KNOWN BUGS
 # ensure vehicle facing is required when certain stat blocks are passed
+# cleanup main
+# move verbose parts of main to other function
 
 # TODO
-# standard weapon loading
-# razor sharp
+# razor sharp implement
 # automatic histogram plotting
 # more targets
+# more weapons
 # implement single shot/multi round burst
 
 import argparse
@@ -172,7 +174,8 @@ def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
             "damage": damage}
 
 
-def dice_roller(n_dice, target, damage_bonus, penetration, vehicle_facing, accurate, proven, sides):
+def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=False, accurate=False,
+                proven=False, sides=10):
     """"
     Rolls a predefined number of dice with specified amount of sides
     target is the number to beat (lower = success) on a d100
@@ -180,7 +183,6 @@ def dice_roller(n_dice, target, damage_bonus, penetration, vehicle_facing, accur
     proven is the minimum value a die takes, is passed as an input to deeper functions
     returns a list of damage die
     """
-
     # init empty list for storing rolls
     rolls = []
     # rolls the n_dice times
@@ -224,11 +226,21 @@ def main(args=False):
     # loads enemy stats
     enemy_stats = load_enemy(args.enemy)
 
-    # simulates rolls
-    rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides,
-                        proven=args.proven, accurate=args.accurate, damage_bonus=args.bonus,
-                        penetration=args.penetration, vehicle_facing=args.facing)
+    # loads weapon and rolls the dice
+    if args.weapon:
+        weapon = load_weapon(args.weapon)
+        graviton = weapon["graviton"]
+        rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides, proven=weapon["proven"],
+                            accurate=weapon["proven"], damage_bonus=weapon["damage_bonus"],
+                            penetration=weapon["penetration"], )
+    # or uses some base stats
+    else:
+        graviton = args.graviton
+        rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides,
+                            proven=args.proven, accurate=args.accurate, damage_bonus=args.bonus,
+                            penetration=args.penetration, vehicle_facing=args.facing)
 
+    # TODO move all this to a verbose function or plotting
     hits = 0
     damage_sum = 0
     # loops over rolls to extract statistics
@@ -236,7 +248,7 @@ def main(args=False):
         if bool(rolls[i]["result"]):
             hits = hits + 1
             # calculates damage dealt
-            damage_dealt, rolls[i] = get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats, graviton=args.graviton)
+            damage_dealt, rolls[i] = get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats, graviton=graviton)
             damage_sum = damage_sum + damage_dealt
 
     # determines hit rate and damage per shot dealt

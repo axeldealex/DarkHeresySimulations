@@ -10,6 +10,7 @@
 
 # TODO
 # razor sharp implement
+# tearing implement
 # automatic histogram plotting
 # more targets
 # more weapons

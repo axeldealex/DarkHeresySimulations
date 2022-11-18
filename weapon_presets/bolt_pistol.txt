@@ -1,0 +1,10 @@
+# bolt pistol, strong weapon for human hands
+family bolt
+class pistol
+range 30
+RoF 1/2/-
+damage_bonus 5
+penetration 4
+clip 8
+damage_type explosive
+tearing True

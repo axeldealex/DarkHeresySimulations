@@ -1,10 +1,10 @@
-# A standard sniper rifle - no modification
+# customised sniper rifle used by my DH character, Casper - modded to high hell
 family solid_projectile
 class basic
 range 200
 RoF 1/-/-
-damage_bonus 4
-penetration 3
+damage_bonus 5
+penetration 4
 clip 20
 damage_type impact
 accurate True

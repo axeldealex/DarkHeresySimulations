@@ -17,7 +17,7 @@
 # implement single shot/multi round burst
 
 from loading_funcs import load_enemy, load_weapon
-from checker_func import check_jam, input_checks
+from checker_funcs import check_jam, input_checks
 from random import randint
 from os import listdir
 import argparse
@@ -72,6 +72,8 @@ def parse_args():
                         help='unreliable, makes it so weapon jams on a 91 or  higher')
     parser.add_argument('-r', '--reliable', dest='reliable', default=False, action='store_true',
                         help='reliable, makes it so weapon only jams on a 100')
+    parser.add_argument('-te', '--tearing', dest='tearing', default=False, action='store_true',
+                        help='tearing, rolls 2 initial damage die and picks the higher')
 
     # selection of which enemy is being shot at
     parser.add_argument('-e', '--enemy', dest='enemy', default='hiver.txt', choices=listdir('enemy_presets'),
@@ -108,7 +110,7 @@ def parse_args():
     return args
 
 
-def damage_roll(DoS, accurate, proven, primitive, sides):
+def damage_roll(DoS, accurate, proven, primitive, tearing, sides):
     """"
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
@@ -116,7 +118,10 @@ def damage_roll(DoS, accurate, proven, primitive, sides):
 
     returns amount of damage (int)
     """
-    roll = randint(1, sides)
+    if tearing:
+        roll = max(randint(1, sides), randint(1,sides))
+    else:
+        roll = randint(1, sides)
 
     if proven:
         if roll < proven:
@@ -156,7 +161,7 @@ def determine_location(hit_roll):
         return "leg_right"
 
 
-def hit_roller(target, proven, sides, accurate, primitive, reliable, unreliable, bonus, vehicle_facing):
+def hit_roller(target, proven, sides, accurate, primitive, tearing, reliable, unreliable, bonus, vehicle_facing):
     """"
     Determines if the attack hits
     returns a dict with:
@@ -198,7 +203,7 @@ def hit_roller(target, proven, sides, accurate, primitive, reliable, unreliable,
 
 
 def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=False, accurate=False, primitive=False,
-                proven=False, unreliable=False, reliable=False, sides=10):
+                tearing=False, proven=False, unreliable=False, reliable=False, sides=10):
     """"
     Rolls a predefined number of dice with specified amount of sides
     target is the number to beat (lower = success) on a d100
@@ -212,7 +217,7 @@ def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=Fa
     for i in range(n_dice):
         # and appends to list
         rolls.append(hit_roller(target=target, proven=proven, sides=sides, accurate=accurate, primitive=primitive,
-                                bonus=damage_bonus, reliable=reliable, unreliable=unreliable,
+                                bonus=damage_bonus, reliable=reliable, unreliable=unreliable, tearing=tearing,
                                 vehicle_facing=vehicle_facing))
         rolls[i]["penetration"] = penetration
     return rolls
@@ -296,16 +301,16 @@ def main(args=False):
         weapon = load_weapon(args.weapon)
         graviton = weapon["graviton"]
         rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides, proven=weapon["proven"],
-                            accurate=weapon["proven"], damage_bonus=weapon["damage_bonus"],
+                            accurate=weapon["proven"], damage_bonus=weapon["damage_bonus"], tearing=weapon['tearing'],
                             primitive=weapon["primitive"], penetration=weapon["penetration"],
-                            unreliable=weapon['unreliable'], reliable=weapon['reliable'],vehicle_facing=args.facing)
+                            unreliable=weapon['unreliable'], reliable=weapon['reliable'], vehicle_facing=args.facing)
     # or uses some base stats
     else:
         graviton = args.graviton
         rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides, proven=args.proven,
                             accurate=args.accurate, damage_bonus=args.bonus, primitive=args.primitive,
                             penetration=args.penetration, unreliable=args.reliable, reliable=args.reliable,
-                            vehicle_facing=args.facing,)
+                            tearing=args.tearing, vehicle_facing=args.facing,)
 
     # calculate stats
     stats = calculate_stats(rolls=rolls, graviton=graviton, enemy_stats=enemy_stats)

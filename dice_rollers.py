@@ -46,7 +46,7 @@ def parse_args():
     parser.add_argument('-t', '--target', dest='target', default=50, type=int,
                         help='target to hit. Must be a positive integer.')
 
-    # parser argument for important a weapon preset
+    # parser argument to import a weapon preset
     parser.add_argument('-w', '--weapon', dest='weapon', choices=listdir('weapon_presets'), default=False,
                         help='weapon preset to perform calculations with. Takes precedence over manual values.')
 
@@ -55,9 +55,9 @@ def parse_args():
                         help='print some of the progress to the terminal')
 
     # flags for weapon traits
-    parser.add_argument('-pr', '--proven', dest='proven', default=False, type=int,
+    parser.add_argument('-pro', '--proven', dest='proven', default=False, type=int,
                         help='proven, minimal value of the damage die. '
-                             'Must be a positive integer below 10 and above 1.')
+                             'Must be a positive integer below amount of sides and above 1.')
     parser.add_argument('-a', '--accurate', dest='accurate', action='store_true', default=False,
                         help='accurate, adds extra damage die on high DoS. True or False.')
     parser.add_argument('-b', '--bonus', dest='bonus', default=0, type=int,
@@ -66,6 +66,9 @@ def parse_args():
                         help='graviton, adds extra damage based on the armour of the target')
     parser.add_argument('-p', '--penetration', dest='penetration', default=0, type=int,
                         help='penetration of the weapon, only works against armour on the enemy')
+    parser.add_argument('-pri', '--primitive', dest='primitive', default=False, type=int,
+                        help='primitive, maximum value of the damage die.'
+                             'Must be smaller than sides and higher than 1')
 
     # selection of which enemy is being shot at
     parser.add_argument('-e', '--enemy', dest='enemy', default='hiver.txt', choices=listdir('enemy_presets'),
@@ -82,8 +85,12 @@ def parse_args():
     args = parser.parse_args()
 
     # catching errors prematurely
+    if args.proven and args.primtive:
+        parser.error("No weapon should have proven and primitive, that doesn't make sense")
     if (args.proven < 2 or args.proven >= args.sides) and args.proven:
         parser.error("invalid number for proven")
+    if (args.primitive >= args.sides or args.primitive < 2) and args.primitive:
+        parser.error("invalid number for primitive")
     if args.sides < 2:
         parser.error("invalid number for sides")
     if args.n_rolls < 1:
@@ -96,15 +103,22 @@ def parse_args():
     return args
 
 
-def damage_roll(DoS, accurate, proven, sides):
+def damage_roll(DoS, accurate, proven, primitive, sides):
     """"
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
+    primitive is the max value of a die
+
+    returns amount of damage (int)
     """
     roll = randint(1, sides)
+
     if proven:
         if roll < proven:
             roll = proven
+    if primitive:
+        if roll > primitive:
+            roll = primitive
 
     if accurate:
         if (DoS - 1) // 2 > 1:
@@ -137,7 +151,7 @@ def determine_location(hit_roll):
         return "leg_right"
 
 
-def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
+def hit_roller(target, proven, sides, accurate, primitive, bonus, vehicle_facing):
     """"
     Determines if the attack hits
     returns a dict with:
@@ -154,7 +168,7 @@ def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
     if hit_roll <= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
-        damage = damage_roll(degrees, accurate, proven, sides) + bonus
+        damage = damage_roll(degrees, accurate, proven, primitive, sides) + bonus
     # or a fail
     else:
         degrees = target // 10 - hit_roll // 10 - 1
@@ -174,7 +188,7 @@ def hit_roller(target, proven, sides, accurate, bonus, vehicle_facing):
             "damage": damage}
 
 
-def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=False, accurate=False,
+def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=False, accurate=False, primitive=False,
                 proven=False, sides=10):
     """"
     Rolls a predefined number of dice with specified amount of sides
@@ -188,7 +202,7 @@ def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=Fa
     # rolls the n_dice times
     for i in range(n_dice):
         # and appends to list
-        rolls.append(hit_roller(target=target, proven=proven, sides=sides, accurate=accurate,
+        rolls.append(hit_roller(target=target, proven=proven, sides=sides, accurate=accurate, primitive=primitive,
                                 bonus=damage_bonus, vehicle_facing=vehicle_facing))
         rolls[i]["penetration"] = penetration
     return rolls
@@ -285,12 +299,12 @@ def main(args=False):
         graviton = weapon["graviton"]
         rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides, proven=weapon["proven"],
                             accurate=weapon["proven"], damage_bonus=weapon["damage_bonus"],
-                            penetration=weapon["penetration"], vehicle_facing=args.facing)
+                            primitive=weapon["primitve"], penetration=weapon["penetration"], vehicle_facing=args.facing)
     # or uses some base stats
     else:
         graviton = args.graviton
-        rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides,
-                            proven=args.proven, accurate=args.accurate, damage_bonus=args.bonus,
+        rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides, proven=args.proven,
+                            accurate=args.accurate, damage_bonus=args.bonus, primitive=args.primitive,
                             penetration=args.penetration, vehicle_facing=args.facing)
 
     # calculate stats

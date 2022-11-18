@@ -7,17 +7,23 @@ For example, python3 dice_rollers.py will roll dice using the default values. Re
 
 ## Future Features (far away)
 Histogram creation
+
 GUI
 
 ### Weapon Qualities to add (short term)
 Lance
+
 Melta
+
 Tearing
+
 Vengeful
+
 Twin Linked
 
 ### Other features to add (mid term)
 Power fields
+
 Emperor's Fury
 
 ### When I work on this project

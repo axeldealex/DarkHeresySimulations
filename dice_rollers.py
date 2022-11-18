@@ -10,7 +10,6 @@
 
 # TODO
 # razor sharp implement
-# tearing implement
 # automatic histogram plotting
 # more targets
 # more weapons
@@ -19,6 +18,7 @@
 from loading_funcs import load_enemy, load_weapon
 from checker_funcs import check_jam, input_checks
 from random import randint
+from json import dumps
 from os import listdir
 import argparse
 
@@ -48,6 +48,9 @@ def parse_args():
     # parser argument to import a weapon preset
     parser.add_argument('-w', '--weapon', dest='weapon', choices=listdir('weapon_presets'), default=False,
                         help='weapon preset to perform calculations with. Takes precedence over manual values.')
+
+    parser.add_argument('-o', '--output', dest='output', default="False",
+                        help='output directory to save the data in and save the created histograms')
 
     # parser argument for verbose printing
     parser.add_argument('-v', '--verbose', dest='verbose', default=True, action='store_true',
@@ -118,11 +121,18 @@ def damage_roll(DoS, accurate, proven, primitive, tearing, sides):
 
     returns amount of damage (int)
     """
+    # rolls 2 dice if tearing
     if tearing:
-        roll = max(randint(1, sides), randint(1,sides))
+        roll = max(randint(1, sides), randint(1, sides))
     else:
         roll = randint(1, sides)
 
+    # emperors fury check
+    emperors_fury = False
+    if roll == sides:
+        emperors_fury = True
+
+    # proven for min value and primitive for max
     if proven:
         if roll < proven:
             roll = proven
@@ -130,12 +140,14 @@ def damage_roll(DoS, accurate, proven, primitive, tearing, sides):
         if roll > primitive:
             roll = primitive
 
+    # adds extra damage die for accurate
     if accurate:
         if (DoS - 1) // 2 > 1:
             roll = roll + randint(1, sides)
         if (DoS - 1) // 2 > 2:
             roll = roll + randint(1, sides)
-    return roll
+
+    return roll, emperors_fury
 
 
 def determine_location(hit_roll):
@@ -179,12 +191,14 @@ def hit_roller(target, proven, sides, accurate, primitive, tearing, reliable, un
     if hit_roll <= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
-        damage = damage_roll(degrees, accurate, proven, primitive, sides) + bonus
+        damage, emperors_fury = damage_roll(degrees, accurate, proven, primitive, tearing, sides)
+        damage += bonus
     # or a fail
     else:
         degrees = target // 10 - hit_roll // 10 - 1
         result = False
         damage = "miss"
+        emperors_fury = False
 
     jam = check_jam(hit_roll, reliable, unreliable)
 
@@ -199,11 +213,12 @@ def hit_roller(target, proven, sides, accurate, primitive, tearing, reliable, un
             "location": location,
             "hit_roll": hit_roll,
             "damage": damage,
-            "jam": jam}
+            "jam": jam,
+            "fury": emperors_fury}
 
 
 def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=False, accurate=False, primitive=False,
-                tearing=False, proven=False, unreliable=False, reliable=False, sides=10):
+                tearing=False, razor_sharp=False, proven=False, unreliable=False, reliable=False, sides=10):
     """"
     Rolls a predefined number of dice with specified amount of sides
     target is the number to beat (lower = success) on a d100
@@ -219,7 +234,11 @@ def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=Fa
         rolls.append(hit_roller(target=target, proven=proven, sides=sides, accurate=accurate, primitive=primitive,
                                 bonus=damage_bonus, reliable=reliable, unreliable=unreliable, tearing=tearing,
                                 vehicle_facing=vehicle_facing))
-        rolls[i]["penetration"] = penetration
+        # razor sharp implementation
+        if razor_sharp and rolls[i]['degrees'] > 2:
+            rolls[i]["penetration"] = penetration * 2
+        else:
+            rolls[i]['penetration'] = penetration
     return rolls
 
 
@@ -253,10 +272,13 @@ def calculate_stats(rolls, graviton, enemy_stats):
 
     and returns a dict with those values
     """
+    # initialises tracking variables
     hits = 0
     damage_sum = 0
     n_rolls = len(rolls)
     stats = {}
+    max_damage = 0
+    min_damage = 10000
 
     # loops over rolls to extract statistics
     for i in range(len(rolls)):
@@ -265,11 +287,17 @@ def calculate_stats(rolls, graviton, enemy_stats):
             # calculates damage dealt
             damage_dealt, rolls[i] = get_damage_dealt(hit_roll=rolls[i], enemy=enemy_stats, graviton=graviton)
             damage_sum = damage_sum + damage_dealt
+            if min_damage > damage_dealt:
+                min_damage = damage_dealt
+            if max_damage < damage_dealt:
+                max_damage = damage_dealt
 
     # determines hit rate and damage per shot dealt
     stats["hit_rate"] = hits / n_rolls * 100
     stats["average_damage_shot"] = damage_sum / n_rolls
     stats["average_damage_hit"] = damage_sum / hits
+    stats['min_damage'] = min_damage
+    stats['max_damage'] = max_damage
 
     return stats
 
@@ -281,6 +309,8 @@ def verbose_printing(stats):
     print(f'hit rate was {stats.get("hit_rate")} %')
     print(f'average damage per shot was {stats.get("average_damage_shot")}')
     print(f"average damage per hit was {stats.get('average_damage_hit')}")
+    print(f'minimal damage dealt on a hit was {stats.get("min_damage")}')
+    print(f'maximum damage dealt on a hit was {stats.get("max_damage")}')
 
 
 def main(args=False):
@@ -317,6 +347,12 @@ def main(args=False):
 
     if args.verbose:
         verbose_printing(stats)
+
+    if args.output:
+        with open(args.output, "w") as f:
+            for i in range(len(rolls)):
+                f.write(dumps(rolls[i]))
+                f.write('\n')
 
 
 if __name__ == '__main__':

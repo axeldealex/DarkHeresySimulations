@@ -1,0 +1,9 @@
+# standard hive - no armour at all, only some Toughness
+vehicle 0
+toughness 30
+head 0
+arm_right 0
+arm_left 0
+body 0
+leg_left 0
+leg_right 0

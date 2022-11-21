@@ -1,0 +1,9 @@
+# hotshot laspistol, increased capacity for increased pen
+family las
+class pistol
+range 20
+RoF 1/2/-
+damage_bonus 4
+penetration 7
+clip 40
+damage_type energy

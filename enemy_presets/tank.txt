@@ -1,0 +1,6 @@
+# an actual Leman Russ tank - pretty much unbeatable by anything except gravitons
+vehicle 1
+toughness 0
+front 40
+side 32
+rear 20

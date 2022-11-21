@@ -1,0 +1,9 @@
+# ganger wearing some scrapped together armour
+vehicle 0
+toughness 30
+head 3
+arm_right 3
+arm_left 3
+body 5
+leg_left 3
+leg_right 3

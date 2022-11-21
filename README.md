@@ -21,12 +21,12 @@ Vengeful
 
 Twin Linked
 
-### Other features to add (mid term)
+### Other features to add (midterm)
 Power fields
 
 Emperor's Fury
 
 ### When I work on this project
-For now I'm doing this as something I code when I feel like it, so progress might be very slow (currently going super fast as of 18/11/2022). 
+For now, I'm doing this as something I code when I feel like it, so progress might be very slow (currently going fast as of 18/11/2022). 
 I'm trying to keep everything well documented as well so that's taking a good amount of time. Nothing beats best practice though. 
 Not sure if this ever turns out as an interesting project, but might refer to this as a portfolio piece at some point. 

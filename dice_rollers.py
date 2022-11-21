@@ -111,7 +111,7 @@ def parse_args():
 
 
 def damage_roll(DoS, accurate, proven, primitive, tearing, sides):
-    """"
+    """
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
     primitive is the max value of a die
@@ -119,7 +119,7 @@ def damage_roll(DoS, accurate, proven, primitive, tearing, sides):
     returns amount of damage (int)
     """
     if tearing:
-        roll = max(randint(1, sides), randint(1,sides))
+        roll = max(randint(1, sides), randint(1, sides))
     else:
         roll = randint(1, sides)
 
@@ -179,7 +179,7 @@ def hit_roller(target, proven, sides, accurate, primitive, tearing, reliable, un
     if hit_roll <= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
-        damage = damage_roll(degrees, accurate, proven, primitive, sides) + bonus
+        damage = damage_roll(degrees, accurate, proven, primitive, tearing, sides) + bonus
     # or a fail
     else:
         degrees = target // 10 - hit_roll // 10 - 1
@@ -224,7 +224,7 @@ def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=Fa
 
 
 def get_damage_dealt(hit_roll, enemy, graviton=False):
-    """"
+    """
     Calculates the exact damage dealt based on enemy armour values, original hit roll and some armour features.
     """
     # gets values from enemy and hit dict
@@ -245,7 +245,7 @@ def get_damage_dealt(hit_roll, enemy, graviton=False):
 
 
 def calculate_stats(rolls, graviton, enemy_stats):
-    """"
+    """
     Calculates a selection of stats such as
         hit rate (0-1)
         average damage per shot (float)

@@ -6,6 +6,8 @@ def check_jam(hit_roll, reliable, unreliable):
         return True
     elif unreliable and hit_roll >= 91:
         return True
+    elif hit_roll > 96:
+        return True
     return False
 
 

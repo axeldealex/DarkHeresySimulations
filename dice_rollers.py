@@ -15,8 +15,10 @@
 # more weapons
 # implement single shot/multi round burst
 
+
 from loading_funcs import load_enemy, load_weapon
 from checker_funcs import check_jam, input_checks
+from matplotlib import pyplot as plt
 from random import randint
 from json import dumps
 from os import listdir
@@ -354,6 +356,8 @@ def main(args=False):
                 f.write(dumps(rolls[i]))
                 f.write('\n')
 
+    if args.plotting:
+        plotting(rolls)
 
 if __name__ == '__main__':
     main()

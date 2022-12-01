@@ -6,8 +6,6 @@ The script has an argparser - assuming the right libraries are present the argpa
 For example, python3 dice_rollers.py will roll dice using the default values. Recommended is to use over 10000 rolls to level the random seeding as much as possible without causing massive memory overhead, which can happen if you simulate large amount of rolls.
 
 ## Future Features (far away)
-Histogram creation
-
 GUI
 
 ### Weapon Qualities to add (short term)
@@ -15,16 +13,12 @@ Lance
 
 Melta
 
-Tearing
-
 Vengeful
 
 Twin Linked
 
 ### Other features to add (midterm)
 Power fields
-
-Emperor's Fury
 
 ### When I work on this project
 For now, I'm doing this as something I code when I feel like it, so progress might be very slow (currently going fast as of 18/11/2022). 

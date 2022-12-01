@@ -18,6 +18,7 @@
 
 from loading_funcs import load_enemy, load_weapon
 from checker_funcs import check_jam, input_checks
+from plotting_funcs import plot_hist, save_hist
 from matplotlib import pyplot as plt
 from random import randint
 from json import dumps
@@ -54,9 +55,11 @@ def parse_args():
     parser.add_argument('-o', '--output', dest='output', default="False",
                         help='output directory to save the data in and save the created histograms')
 
-    # parser argument for verbose printing
+    # parser argument for verbose printing and plotting
     parser.add_argument('-v', '--verbose', dest='verbose', default=True, action='store_true',
                         help='print some of the progress to the terminal')
+    parser.add_argument('-g', '--histogram', dest='plotting', default=False, action='store_true',
+                        help='create and save a histogram')
 
     # flags for weapon traits
     parser.add_argument('-pro', '--proven', dest='proven', default=False, type=int,
@@ -66,7 +69,7 @@ def parse_args():
                         help='accurate, adds extra damage die on high DoS. True or False.')
     parser.add_argument('-b', '--bonus', dest='bonus', default=0, type=int,
                         help='flat bonus to damage')
-    parser.add_argument('-g', '-graviton', dest='graviton', default=False, action='store_true',
+    parser.add_argument('-gr', '-graviton', dest='graviton', default=False, action='store_true',
                         help='graviton, adds extra damage based on the armour of the target')
     parser.add_argument('-p', '--penetration', dest='penetration', default=0, type=int,
                         help='penetration of the weapon, only works against armour on the enemy')
@@ -245,7 +248,7 @@ def dice_roller(n_dice, target, damage_bonus=0, penetration=0, vehicle_facing=Fa
 
 
 def get_damage_dealt(hit_roll, enemy, graviton=False):
-    """"
+    """
     Calculates the exact damage dealt based on enemy armour values, original hit roll and some armour features.
     """
     # gets values from enemy and hit dict
@@ -350,14 +353,16 @@ def main(args=False):
     if args.verbose:
         verbose_printing(stats)
 
-    if args.output:
+    # TODO this is jank, fix it
+    if args.output != 'False':
         with open(args.output, "w") as f:
             for i in range(len(rolls)):
                 f.write(dumps(rolls[i]))
                 f.write('\n')
 
     if args.plotting:
-        plotting(rolls)
+        plot_hist(rolls, args.output)
+
 
 if __name__ == '__main__':
     main()

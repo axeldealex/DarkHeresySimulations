@@ -1,0 +1,11 @@
+# combi sniper for my DH character
+family solid_projectile
+class basic
+range 200
+RoF 1/-/-
+damage_bonus 5
+penetration 4
+clip 4
+damage_type impact
+accurate True
+reliable True

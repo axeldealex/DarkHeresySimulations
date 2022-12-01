@@ -1,0 +1,10 @@
+# combi autogun for my DH character
+family solid_projectile
+class basic
+range 60
+RoF 1/2/4
+damage_bonus 4
+penetration 2
+clip 30
+damage_type impact
+reliable True

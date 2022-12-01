@@ -1,0 +1,11 @@
+# graviton gun, very effective against armoured opponents
+family exotic
+class basic
+range 30
+RoF 1/3/-
+damage_bonus 6
+penetration 8
+clip 9
+damage_type impact
+concussive 2
+graviton True

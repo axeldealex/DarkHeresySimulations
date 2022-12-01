@@ -119,7 +119,7 @@ def parse_args():
 
 
 def damage_roll(DoS, accurate, proven, primitive, tearing, sides):
-    """"
+    """
     Rolls a single die with specified amount of sides
     proven is the minimum value of a die
     primitive is the max value of a die
@@ -196,7 +196,8 @@ def hit_roller(target, proven, sides, accurate, primitive, tearing, reliable, un
     if hit_roll <= target:
         result = True
         degrees = target // 10 - hit_roll // 10 + 1
-        damage, emperors_fury = damage_roll(degrees, accurate, proven, primitive, tearing, sides)
+        damage, emperors_fury = damage_roll(DoS=degrees, accurate=accurate, proven=proven, primitive=primitive,
+                                            tearing=tearing, sides=sides)
         damage += bonus
     # or a fail
     else:
@@ -269,7 +270,7 @@ def get_damage_dealt(hit_roll, enemy, graviton=False):
 
 
 def calculate_stats(rolls, graviton, enemy_stats):
-    """"
+    """
     Calculates a selection of stats such as
         hit rate (0-1)
         average damage per shot (float)
@@ -336,7 +337,7 @@ def main(args=False):
         weapon = load_weapon(args.weapon)
         graviton = weapon["graviton"]
         rolls = dice_roller(n_dice=args.n_rolls, target=args.target, sides=args.sides, proven=weapon["proven"],
-                            accurate=weapon["proven"], damage_bonus=weapon["damage_bonus"], tearing=weapon['tearing'],
+                            accurate=weapon["accurate"], damage_bonus=weapon["damage_bonus"], tearing=weapon['tearing'],
                             primitive=weapon["primitive"], penetration=weapon["penetration"],
                             unreliable=weapon['unreliable'], reliable=weapon['reliable'], vehicle_facing=args.facing)
     # or uses some base stats
@@ -356,6 +357,9 @@ def main(args=False):
     # TODO this is jank, fix it
     if args.output != 'False':
         with open(args.output, "w") as f:
+            if args.weapon:
+                f.write(dumps(weapon))
+                f.write('\n')
             for i in range(len(rolls)):
                 f.write(dumps(rolls[i]))
                 f.write('\n')

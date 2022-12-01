@@ -7,14 +7,16 @@
 ####################################
 
 # TODO IMPORTANT/KNOWN BUGS
+# implement single shot/multi round burst
+# improved handling of statistics and printing
 
 # TODO
-# razor sharp implement
-# automatic histogram plotting
 # more targets
-# more weapons
-# implement single shot/multi round burst
-
+# weapon creation from the script
+# saving/loading results for later extended analysis
+# damage per body part
+# damage per round for multi shit bursts
+# comparison of damage per turn for different firing modes
 
 from loading_funcs import load_enemy, load_weapon
 from checker_funcs import check_jam, input_checks
